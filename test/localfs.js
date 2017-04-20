@@ -6,10 +6,12 @@ const rimraf = require('rimraf');
 const LocalFS = require('../src/localfs');
 const helpers = require('./helpers.js');
 
+const TESTDIR = '/tmp/__tests-localfs';
+
 describe('LocalFS', () => {
 
   before((done) => {
-    rimraf('/tmp/__tests', done);
+    rimraf(TESTDIR, done);
   });
 
   it('new LocalFS, using relative root', () => {
@@ -23,12 +25,13 @@ describe('LocalFS', () => {
   });
 
   it('create new dir', () => {
-    const lfs = new LocalFS({root: '/tmp/__tests/cnd'});
+    const lfs = new LocalFS({root: path.resolve(TESTDIR, 'cnd')});
     return lfs.init()
     .then(() => {
       return lfs.createDirIfNotExists('subdir');
     })
-    .then(() => helpers.assertDirExists('/tmp/__tests/cnd'))
-    .then(() => helpers.assertDirExists('/tmp/__tests/cnd/subdir'));
+    .then(() => helpers.assertDirExists(path.resolve(TESTDIR, 'cnd')))
+    .then(() => helpers.assertDirExists(path.resolve(TESTDIR, 'cnd/subdir')))
+    .then(() => helpers.expectDirs(TESTDIR, {cnd: {subdir: {}}}));
   });
 });

@@ -7,8 +7,19 @@ Design: uses a shared file system (DropBox) to accomplish the message queue / to
 between components.
 
 Directories:
-* working: used by publisher to prep a message
-* target: used once message is ready for action
-* processing: used by consumer when they begin work
-* processed: used by consumer when they finish
-* error: used by consumer when job cannot be completed
+* root service
+  * [topic 1]
+    * .incoming
+      * working: used by publisher to prep a message
+      * target: used once message is ready for action
+      * processing: used by consumer when they begin work
+      * processed: used by consumer when they finish
+      * error: used by consumer when job cannot be completed
+    * .subscriber1
+      * working: used by publisher to prep a message
+      * target: used once message is ready for action
+      * processing: used by consumer when they begin work
+      * processed: used by consumer when they finish
+      * error: used by consumer when job cannot be completed
+
+
