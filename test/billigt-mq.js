@@ -45,9 +45,17 @@ describe('BilligtMQ', () => {
     .then(() => helpers.expectDirs(TESTDIR, {basic: {}}));
   });
 
+  const expectedEmptyTopic = {
+    basic: {
+      topic: {
+        '.incoming': {error: {}, processed: {}, processing: {}, target: {}, working: {}},
+        '.valid': {error: {}, processed: {}, processing: {}, target: {}, working: {}},
+      },
+    },
+  };
   it('createTopic', () => {
     return bmq.createTopic('topic')
-    .then(() => helpers.expectDirs(TESTDIR, {foo: {}}))
+    .then(() => helpers.expectDirs(TESTDIR, expectedEmptyTopic))
     .catch((e) => {
       console.log('oops', e);
       throw(e);

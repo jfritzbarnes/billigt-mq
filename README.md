@@ -1,4 +1,4 @@
-billigt-mq: cheap message queue / topic service
+> billigt-mq: cheap message queue / topic service
 
 Goal: cheap pubsub protocol for small projects that allow interoperation of
 disparate components; often not operating continuously.

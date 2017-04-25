@@ -36,7 +36,6 @@ module.exports.expectDirs = function(dir, expected) {
   const found = {};
   return _readDirs(dir, found)
   .then(() => {
-    console.log('found', found);
     expect(found).to.deep.equal(expected);
   });
 }

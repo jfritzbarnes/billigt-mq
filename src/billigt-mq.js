@@ -52,7 +52,6 @@ class BilligtMQ extends EventEmitter {
   }
 
   createTopic(topic) {
-    console.log(`createTopic(${topic})`);
     return createTopicDirs(this, topic);
   }
 
@@ -81,6 +80,7 @@ function createTopicDirs(bmq, topic) {
   .then(() => bmq.fs.createDirIfNotExists(`${topic}/.incoming/processing`))
   .then(() => bmq.fs.createDirIfNotExists(`${topic}/.incoming/processed`))
   .then(() => bmq.fs.createDirIfNotExists(`${topic}/.incoming/error`))
+  .then(() => bmq.fs.createDirIfNotExists(`${topic}/.${bmq.name}`))
   .then(() => bmq.fs.createDirIfNotExists(`${topic}/.${bmq.name}/working`))
   .then(() => bmq.fs.createDirIfNotExists(`${topic}/.${bmq.name}/target`))
   .then(() => bmq.fs.createDirIfNotExists(`${topic}/.${bmq.name}/processing`))
