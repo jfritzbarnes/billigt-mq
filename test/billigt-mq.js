@@ -2,6 +2,7 @@ const chai = require('chai');
 chai.should();
 const rimraf = require('rimraf');
 const path = require('path');
+const lodash = require('lodash');
 
 const BilligtMQ = require('../src/billigt-mq');
 const helpers = require('./helpers.js');
@@ -59,6 +60,17 @@ describe('BilligtMQ', () => {
     .catch((e) => {
       console.log('oops', e);
       throw(e);
+    });
+  });
+
+  it('sendToTopic', () => {
+    const msg = {foo: 'bar'};
+    return bmq.sendToTopic('topic', msg)
+    .then((msgFile) => {
+      const expected = lodash.cloneDeep(expectedEmptyTopic);
+      expected.basic.topic['.incoming'].processed[msgFile] = true;
+      expected.basic.topic['.valid'].target[msgFile] = true;
+      return helpers.expectDirs(TESTDIR, expected)
     });
   });
 });

@@ -22,4 +22,4 @@ Directories:
       * processed: used by consumer when they finish
       * error: used by consumer when job cannot be completed
 
-
+Message filename structure: `[timestamp].[sender].[id].json`

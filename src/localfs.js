@@ -3,6 +3,7 @@
 const fs = require('fs');
 const path = require('path');
 const lodash = require('lodash');
+const Promise = require('bluebird');
 
 class LocalFS {
   constructor(opts) {
@@ -28,19 +29,50 @@ class LocalFS {
     });
   }
 
+  resolve(...dirs) {
+    return path.resolve(this.root, ...dirs);
+  }
+
   createDirIfNotExists(dir) {
-    const newDir = path.resolve(this.root, dir);
-    return fsmkdirPromise(newDir, true);
+    const localDir = this.resolve(dir);
+    return fsmkdirPromise(localDir, true);
   }
 
   deleteDir(dir) {
-    const resolvedDir = path.resolve(this.root, dir);
+    const localDir = this.resolve(dir);
     return new Promise((resolve, reject) => {
-      fs.rmdir(resolvedDir, (err) => {
+      fs.rmdir(localDir, (err) => {
         if(err) return reject(err);
         resolve();
       });
     });
+  }
+
+  writeFile(dir, contents) {
+    console.log('writeFile');
+    const localDir = this.resolve(dir);
+    const writeFile = Promise.promisify(fs.writeFile);
+    return writeFile(localDir, contents, {flag: 'wx'});
+  }
+
+  moveFile(oldPath, newPath) {
+    const localOldPath = this.resolve(oldPath);
+    const localNewPath = this.resolve(newPath);
+    const rename = Promise.promisify(fs.rename);
+    return rename(localOldPath, localNewPath);
+  }
+
+  copyFile(existingPath, copyPath) {
+    const localExistingPath = this.resolve(existingPath);
+    const localCopyPath = this.resolve(copyPath);
+    const link = Promise.promisify(fs.link);
+    return link(localExistingPath, localCopyPath);
+  }
+
+  getSubdirs(dir) {
+    const localDir = this.resolve(dir);
+    const readdir = Promise.promisify(fs.readdir);
+    return readdir(localDir);
   }
 }
 

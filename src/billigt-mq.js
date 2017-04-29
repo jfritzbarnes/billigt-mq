@@ -2,6 +2,7 @@
 
 const EventEmitter = require('events');
 const lodash = require('lodash');
+const shortid = require('shortid');
 
 //const DropboxFS = require('./dropboxfs');
 const LocalFS = require('./localfs');
@@ -65,6 +66,41 @@ class BilligtMQ extends EventEmitter {
 
   sendToTopic(topic, msg) {
     console.log(`sendToTopic(${topic}, ${msg})`);
+    if(!lodash.isObject(msg)) throw new BilligtMQError('msg must be an object');
+
+    const msgFile = `${Date.now()}.${this.name}.${shortid.generate()}.json`;
+    console.log('msgFile', msgFile);
+    const workingPath = `${topic}/.incoming/working/${msgFile}`;
+    return this.fs.writeFile(workingPath, JSON.stringify(msg))
+    //.then(() => {
+      // actually might skip this step
+      //const workingPath = `${topic}/.incoming/working/${msgFile}`;
+      //return this.fs.moveFile(workingPath, targetPath);
+    //})
+    .then(() => {
+      console.log('before getSubdirs');
+      return this.fs.getSubdirs(topic);
+    })
+    .then((listeners) => {
+      const ps = [];
+      lodash.forEach(listeners, (l) => {
+        if(l === '.incoming') return;
+        const subscriberWorking = `${topic}/${l}/working/${msgFile}`;
+        const p = this.fs.copyFile(workingPath, subscriberWorking)
+        .then(() => {
+          const subscriberTarget = `${topic}/${l}/target/${msgFile}`;
+          return this.fs.moveFile(subscriberWorking, subscriberTarget);
+        });
+        ps.push(p);
+      });
+      return Promise.all(ps);
+    })
+    .then(() => {
+      // delivered to all subscribers; move action to processed
+      const processedPath = `${topic}/.incoming/processed/${msgFile}`;
+      return this.fs.moveFile(workingPath, processedPath);
+    })
+    .then(() => msgFile);
   }
 }
 
