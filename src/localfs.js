@@ -14,19 +14,15 @@ class LocalFS {
   }
 
   init() {
-    return new Promise((resolve) => {
-      let curPath = '';
-      const pathPieces = this.root.split(path.sep).slice(1);
-      var promises = [];
-      lodash.forEach(pathPieces, (p) => {
-        curPath = curPath + path.sep + p;
-        promises.push(fsmkdirPromise(curPath, true));
-      });
-      Promise.all(promises)
-      .then(() => {
-        resolve(this);
-      });
+    let curPath = '';
+    const pathPieces = this.root.split(path.sep).slice(1);
+    let promise = Promise.resolve();
+    lodash.forEach(pathPieces, (p) => {
+      curPath = curPath + path.sep + p;
+      let stagePath = curPath;
+      promise = promise.then(() => fsmkdirPromise(stagePath, true));
     });
+    return promise;
   }
 
   resolve(...dirs) {
@@ -77,15 +73,11 @@ class LocalFS {
 }
 
 function fsmkdirPromise(dir, isExistsOK) {
-  return new Promise((resolve, reject) => {
-    fs.mkdir(dir, (err) => {
-      if(!err) return resolve();
-      if(isExistsOK && err.code === 'EEXIST') {
-        return resolve();
-      } else {
-        return reject();
-      }
-    });
+  const mkdir = Promise.promisify(fs.mkdir);
+  return mkdir(dir)
+  .catch((err) => {
+    if(isExistsOK && err.code === 'EEXIST') return;
+    throw err;
   });
 }
 
