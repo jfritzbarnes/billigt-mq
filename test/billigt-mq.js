@@ -65,12 +65,17 @@ describe('BilligtMQ', () => {
 
   it('sendToTopic', () => {
     const msg = {foo: 'bar'};
+    const gotEvent = helpers.expectEvent(bmq, 'topic');
     return bmq.sendToTopic('topic', msg)
     .then((msgFile) => {
-      const expected = lodash.cloneDeep(expectedEmptyTopic);
-      expected.basic.topic['.incoming'].processed[msgFile] = true;
-      expected.basic.topic['.valid'].target[msgFile] = true;
-      return helpers.expectDirs(TESTDIR, expected)
+      return gotEvent
+      .then((bmqMsg) => {
+        bmqMsg.should.deep.equal(msg);
+        const expected = lodash.cloneDeep(expectedEmptyTopic);
+        expected.basic.topic['.incoming'].processed[msgFile] = true;
+        expected.basic.topic['.valid'].processed[msgFile] = true;
+        return helpers.expectDirs(TESTDIR, expected)
+      });
     });
   });
 });

@@ -39,3 +39,11 @@ module.exports.expectDirs = function(dir, expected) {
     expect(found).to.deep.equal(expected);
   });
 }
+
+module.exports.expectEvent = function(emitter, event, what) {
+  return new Promise((resolve, reject) => {
+    emitter.once(event, (msg) => {
+      resolve(msg);
+    });
+  });
+}

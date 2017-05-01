@@ -4,6 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const lodash = require('lodash');
 const Promise = require('bluebird');
+const chokidar = require('chokidar');
 
 class LocalFS {
   constructor(opts) {
@@ -44,6 +45,17 @@ class LocalFS {
     });
   }
 
+  /**
+   * returns chokidar's fs.FSWatcher object similar to an EventEmitter
+   * this should be used for handling add events
+   *
+   * when done: fs.FSWatcher.close() should be called
+   */
+  watchDir(dir) {
+    const localDir = this.resolve(dir);
+    return chokidar.watch(localDir, {cwd: localDir});
+  }
+
   writeFile(dir, contents) {
     console.log('writeFile');
     const localDir = this.resolve(dir);
@@ -51,11 +63,23 @@ class LocalFS {
     return writeFile(localDir, contents, {flag: 'wx'});
   }
 
+  readFile(path) {
+    const localPath = this.resolve(path);
+    const readFile = Promise.promisify(fs.readFile);
+    return readFile(localPath);
+  }
+
   moveFile(oldPath, newPath) {
     const localOldPath = this.resolve(oldPath);
     const localNewPath = this.resolve(newPath);
     const rename = Promise.promisify(fs.rename);
     return rename(localOldPath, localNewPath);
+  }
+
+  removeFile(path) {
+    const localPath = this.resolve(path);
+    const unlink = Promise.promisify(fs.unlink);
+    return unlink(localPath);
   }
 
   copyFile(existingPath, copyPath) {

@@ -33,6 +33,7 @@ class BilligtMQ extends EventEmitter {
       this.root = opts.root ? opts.root : './billigtmq';
       this.fs = new LocalFS({root: this.root});
     }
+    this.listeners = {};
   }
 
   start() {
@@ -53,7 +54,8 @@ class BilligtMQ extends EventEmitter {
   }
 
   createTopic(topic) {
-    return createTopicDirs(this, topic);
+    return createTopicDirs(this, topic)
+    .then(() => this.listenTopic(topic));
   }
 
   deleteTopic(topic) {
@@ -62,6 +64,17 @@ class BilligtMQ extends EventEmitter {
 
   listenTopic(topic) {
     console.log(`listenTopic(${topic})`);
+    return createTopicSubscriberDirs(this, topic)
+    .then(() => {
+      if(!this.listeners[topic]) {
+        const watcher = this.fs.watchDir(`topic/.${this.name}/target`);
+        watcher.on('add', (filename) => {
+          handleListen(this, topic, 'unknown', filename);
+          console.log(`FS watch event: event=<unknown>, filename=${filename}`);
+        });
+        this.listeners[topic] = watcher;
+      }
+    });
   }
 
   sendToTopic(topic, msg) {
@@ -116,12 +129,29 @@ function createTopicDirs(bmq, topic) {
   .then(() => bmq.fs.createDirIfNotExists(`${topic}/.incoming/processing`))
   .then(() => bmq.fs.createDirIfNotExists(`${topic}/.incoming/processed`))
   .then(() => bmq.fs.createDirIfNotExists(`${topic}/.incoming/error`))
+  .then(() => createTopicSubscriberDirs(bmq, topic));
+}
+
+function createTopicSubscriberDirs(bmq, topic) {
+  return bmq.fs.createDirIfNotExists(topic)
   .then(() => bmq.fs.createDirIfNotExists(`${topic}/.${bmq.name}`))
   .then(() => bmq.fs.createDirIfNotExists(`${topic}/.${bmq.name}/working`))
   .then(() => bmq.fs.createDirIfNotExists(`${topic}/.${bmq.name}/target`))
   .then(() => bmq.fs.createDirIfNotExists(`${topic}/.${bmq.name}/processing`))
   .then(() => bmq.fs.createDirIfNotExists(`${topic}/.${bmq.name}/processed`))
   .then(() => bmq.fs.createDirIfNotExists(`${topic}/.${bmq.name}/error`));
+}
+
+function handleListen(bmq, topic, event, file) {
+  console.log(`handleListen: event=${event}, filename=${file}`);
+  const targetPath = `${topic}/.${bmq.name}/target/${file}`;
+  return bmq.fs.readFile(targetPath)
+  .then((contents) => {
+    const obj = JSON.parse(contents);
+    bmq.emit(topic, obj);
+    const processedPath = `${topic}/.${bmq.name}/processed/${file}`;
+    return bmq.fs.moveFile(targetPath, processedPath);
+  });
 }
 
 module.exports = BilligtMQ;
