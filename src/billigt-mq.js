@@ -33,6 +33,9 @@ class BilligtMQ extends EventEmitter {
       this.root = opts.root ? opts.root : './billigtmq';
       this.fs = new LocalFS({root: this.root});
     }
+
+    this.senderReceives = (opts.hasOwnProperty('senderReceives')) ? opts.senderReceives : false;
+
     this.listeners = {};
   }
 
@@ -44,7 +47,9 @@ class BilligtMQ extends EventEmitter {
       var promises = [];
       lodash.forEach(this.topics, (t) => {
         //promises.push(createTopicDirs(this, t));
-        promises.push(this.createTopic(t));
+        const p = this.createTopic(t)
+        .then(() => this.listenTopic(t));
+        promises.push(p);
       });
       return Promise.all(promises);
     });
@@ -69,8 +74,8 @@ class BilligtMQ extends EventEmitter {
       if(!this.listeners[topic]) {
         const watcher = this.fs.watchDir(`topic/.${this.name}/target`);
         watcher.on('add', (filename) => {
-          handleListen(this, topic, 'unknown', filename);
-          console.log(`FS watch event: event=<unknown>, filename=${filename}`);
+          handleListen(this, topic, 'add', filename);
+          console.log(`FS watch event: event=add-file, filename=${filename}`);
         });
         this.listeners[topic] = watcher;
       }
@@ -97,7 +102,11 @@ class BilligtMQ extends EventEmitter {
     .then((listeners) => {
       const ps = [];
       lodash.forEach(listeners, (l) => {
+        // incoming is not a listener; skip
         if(l === '.incoming') return;
+        // unless senderReceives skip sending to ourself
+        if(l === '.'+this.name && !this.senderReceives) return;
+
         const subscriberWorking = `${topic}/${l}/working/${msgFile}`;
         const p = this.fs.copyFile(workingPath, subscriberWorking)
         .then(() => {
